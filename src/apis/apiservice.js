@@ -9,15 +9,7 @@ const apiService = axios.create({
   },
 })
 
-export const FetchAllCereals = async () => {
-  try {
-    const response = await apiService.get('/cereals')
-    return response
-  } catch (error) {
-    console.error('Error fetching cereals:', error)
-    throw error
-  }
-}
+
 
 export const FetchAllCerealsWithImages = async () => {
   try {
@@ -25,6 +17,17 @@ export const FetchAllCerealsWithImages = async () => {
     return response
   } catch (error) {
     console.error('Error fetching cereals with images:', error)
+    throw error
+  }
+}
+
+
+export const FetchCerealById = async (id) => {
+  try {
+    const response = await apiService.get(`/cereal/picture/${id}`)
+    return response
+  } catch (error) {
+    console.error('Error fetching cereal by ID:', error)
     throw error
   }
 }

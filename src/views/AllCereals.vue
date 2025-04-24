@@ -1,280 +1,293 @@
 <template>
-  <div class="all-cereals-container">
-    <h1>All Cereals</h1>
-    <div class="controls">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="Search cereals by name..."
-        class="search-input"
-        aria-label="Search cereals by name"
-      />
-      <!-- Optional: Add manufacturer filter dropdown here if needed -->
-    </div>
+  <v-container fluid class="all-cereals-container">
+    <v-row justify="center">
+      <v-col cols="12">
+        <h1 class="text-h4 text-center text-primary mb-6">All Cereals</h1>
+      </v-col>
+    </v-row>
 
-    <div v-if="loading" class="loading-indicator">
-      <p>Loading Cereals...</p>
-      <!-- Optional: Add a spinner component -->
-    </div>
-    <div v-if="error" class="error-message">
-      <p>Error loading cereals: {{ error.message }}</p>
-      <p>Please try refreshing the page.</p>
-    </div>
+    <v-row justify="center" class="mb-4 filter-controls">
 
-    <div v-if="!loading && !error" class="table-container">
-      <table class="cereals-table">
-        <thead>
-          <tr>
-            <th>Cereal Name</th>
-            <th>Manufacturer</th>
-            <th>Type</th>
-            <th>Calories</th>
-            <th>Protein</th>
-            <th>Fat</th>
-            <th>Sodium</th>
-            <th>Fiber</th>
-            <th>Carbohydrates</th>
-            <th>Sugars</th>
-            <th>Vitamins</th>
-            <th>Shelf</th>
-            <th>Potassium</th>
-            <th>Cups</th>
-            <th>Weight</th>
-            <th>Rating</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="filteredCereals.length === 0">
-            <td colspan="2" class="no-results">No cereals found matching your search.</td>
-          </tr>
-          <tr v-for="cereal in filteredCereals" :key="cereal.id || cereal.name">
-            <td>{{ cereal.name }}</td>
-            <td>{{ getManufacturerFullName(cereal.mfr) }}</td>
-            <td>{{ cereal.type }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+<v-col cols="12" md="6" lg="4">
+  <v-text-field
+    v-model="searchQuery"
+    label="Search cereals by name"
+    prepend-inner-icon="mdi-magnify"
+    variant="outlined"
+    density="compact"
+    hide-details
+    clearable
+    rounded="pill"
+    class="filter-input"
+  ></v-text-field>
+</v-col>
+
+<v-col cols="12" md="3" lg="2">
+  <v-select
+    v-model="selectedManufacturer"
+    :items="manufacturerOptions"
+    label="Manufacturer"
+    variant="outlined"
+    density="compact"
+    hide-details
+    clearable
+    rounded="pill"
+    class="filter-input"
+  ></v-select>
+</v-col>
+
+<v-col cols="12" md="3" lg="2">
+         <v-select
+          v-model="selectedType"
+          :items="typeOptions"
+          label="Type"
+          variant="outlined"
+          density="compact"
+          hide-details
+          clearable
+          rounded="pill"
+          class="filter-input"
+        ></v-select>
+      </v-col>
+    </v-row>
+
+    <v-row justify="center">
+      <v-col cols="12">
+        <v-card elevation="2">
+          <v-card-text class="pa-0">
+            <v-data-table
+              :headers="headers"
+              :items="filteredCereals"
+              :search="searchQuery"
+              :loading="loading"
+              loading-text="Loading Cereals..."
+              no-data-text="No cereals available matching your criteria."
+              :items-per-page="15"
+              class="elevation-1 cereals-table"
+              item-value="name"
+              hover
+              density="compact"
+              fixed-header
+              height="600px"
+              @click:row="handleRowClick"
+            >
+
+
+              <template #item.mfr="{ item }">
+                {{ getManufacturerFullName(item.mfr) }}
+              </template>
+
+
+
+              <template #item.type="{ item }">
+                {{ getCerealTypeFormatted(item.type) }}
+              </template>
+
+
+              <template v-slot:loading>
+                <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
+              </template>
+
+
+              <template v-slot:no-results>
+                <v-alert type="warning" class="ma-3">
+                  No cereals found matching "{{ searchQuery }}".
+                </v-alert>
+              </template>
+
+            </v-data-table>
+            <v-alert v-if="error" type="error" dense outlined class="mt-4 mx-4 mb-4">
+              Error loading cereals: {{ error.message }}. Please try refreshing the page.
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
-<script>
-import { FetchAllCereals } from '@/apis/apiservice.js'
 
-// Consider moving this map to a shared utility file if used elsewhere
-const manufacturerMap = {
-  A: 'American Home Food Products',
-  G: 'General Mills',
-  K: 'Kelloggs',
-  N: 'Nabisco',
-  P: 'Post',
-  Q: 'Quaker Oats',
-  R: 'Ralston Purina',
-}
+<script>
+import { mapState, mapActions } from 'pinia'
+import { useCerealStore } from '@/stores/cerealStore.js'
 
 export default {
   name: 'AllCereals',
+
   data() {
     return {
-      cereals: [],
-      error: null,
-      loading: true,
       searchQuery: '',
+      selectedManufacturer: null, // Added for manufacturer filter
+      selectedType: null,         // Added for type filter
+      headers: [
+        // ... existing headers ...
+        { title: 'Cereal Name', key: 'name', align: 'start', sortable: true },
+        { title: 'Manufacturer', key: 'mfr', sortable: true },
+        { title: 'Type', key: 'type', sortable: true },
+        { title: 'Calories', key: 'calories', sortable: true },
+        { title: 'Protein (g)', key: 'protein', sortable: true },
+        { title: 'Fat (g)', key: 'fat', sortable: true },
+        { title: 'Sodium (mg)', key: 'sodium', sortable: true },
+        { title: 'Fiber (g)', key: 'fiber', sortable: true },
+        { title: 'Carbs (g)', key: 'carbo', sortable: true },
+        { title: 'Sugars (g)', key: 'sugars', sortable: true },
+        { title: 'Vitamins (%)', key: 'vitamins', sortable: true },
+        { title: 'Shelf', key: 'shelf', sortable: true },
+        { title: 'Potassium (mg)', key: 'potass', sortable: true },
+        { title: 'Cups', key: 'cups', sortable: true },
+        { title: 'Weight (kg)', key: 'weight', sortable: true },
+        { title: 'Rating', key: 'rating', sortable: true },
+      ],
+      // Define options for the type filter dropdown
+      typeOptions: [
+        { title: 'Cold', value: 'C' },
+        { title: 'Hot', value: 'H' },
+      ],
     }
   },
-  methods: {
-    async fetchCereals() {
-      this.loading = true
-      this.error = null
-      try {
-        const response = await FetchAllCereals()
-        // Assuming response.data is the array of cereals
-        this.cereals = response.data || []
-      } catch (error) {
-        console.error('Failed to fetch cereals:', error)
-        this.error = error
-      } finally {
-        this.loading = false
+  computed: {
+    // Map state properties from the store
+    ...mapState(useCerealStore, [
+        'cereals',
+        'loading',
+        'error',
+        'baseURL',
+        'uniqueManufacturers',
+        'getManufacturerFullName',
+        'getCerealTypeFormatted'
+    ]),
+
+    // Format manufacturer options for the v-select
+    manufacturerOptions() {
+      // Ensure uniqueManufacturers is available and is an array
+      if (!Array.isArray(this.uniqueManufacturers)) {
+        return [];
       }
+      return this.uniqueManufacturers.map(mfr => ({
+        title: this.getManufacturerFullName(mfr), // Get full name using the getter
+        value: mfr // Keep the abbreviation as the value
+      })).sort((a, b) => a.title.localeCompare(b.title)); // Sort alphabetically by full name
     },
-    getManufacturerFullName(code) {
-      return manufacturerMap[code] || code // Return code if not found
+
+    // Computed property to filter cereals based on selections
+    filteredCereals() {
+      let filtered = this.cereals;
+
+      // Apply manufacturer filter
+      if (this.selectedManufacturer) {
+        filtered = filtered.filter(cereal => cereal.mfr === this.selectedManufacturer);
+      }
+
+      // Apply type filter
+      if (this.selectedType) {
+        filtered = filtered.filter(cereal => cereal.type === this.selectedType);
+      }
+
+      // Note: The text search is handled directly by v-data-table's :search prop
+      // No need to filter by searchQuery here unless combining filters in a more complex way
+
+      return filtered;
+    },
+
+  },
+  methods: {
+    // Map actions from the store
+    ...mapActions(useCerealStore, ['fetchCereals']),
+
+    // Local method that uses a computed property (keep if needed elsewhere, otherwise removable)
+    // getCerealsByManufacturer(mfr) {
+    //   return this.filteredCereals.filter((cereal) => cereal.mfr === mfr)
+    // },
+
+    handleRowClick(event, { item }) {
+      // Ensure item.value contains the actual data object when using item-value prop
+      const actualItem = item.value || item; // Adjust based on Vuetify version/behavior
+      if (actualItem && actualItem.id && this.$router) {
+        this.$router.push({ name: 'CerealDetail', params: { id: actualItem.id } });
+      } else if (!actualItem || !actualItem.id) {
+        console.error('Clicked item is missing or does not have an ID:', actualItem);
+      } else {
+        console.error('Vue Router is not available.');
+      }
     },
   },
   mounted() {
-    this.fetchCereals()
-  },
-  computed: {
-    filteredCereals() {
-      if (!this.searchQuery) {
-        return this.cereals
-      }
-      const lowerCaseQuery = this.searchQuery.toLowerCase()
-      return this.cereals.filter((cereal) => cereal.name.toLowerCase().includes(lowerCaseQuery))
-    },
+    // Call the mapped action, check if data needs fetching
+    if (!this.cereals || this.cereals.length === 0) {
+        this.fetchCereals()
+    }
   },
 }
 </script>
 
 <style scoped>
-/* Using variables defined globally or in a parent component is recommended */
-:root {
-  --primary-color: #4a90e2;
-  --text-color: #333;
-  --light-text-color: #555;
-  --bg-color: #f8f9fa;
-  --card-bg: #ffffff;
-  --border-color: #e0e0e0;
-  --shadow-color: rgba(0, 0, 0, 0.08);
-  --hover-bg-color: #f1f3f5;
-  --error-color: #d9534f;
-  --error-bg-color: #f2dede;
-  --error-border-color: #ebccd1;
-}
-
 .all-cereals-container {
-  background-color: var(--card-bg, #fff);
-  border-radius: 12px;
-  box-shadow: 0 6px 12px var(--shadow-color, rgba(0, 0, 0, 0.1));
-  font-family: 'Inter', sans-serif;
+  padding: 2rem 1rem;
+  font-family: Poppins, sans-serif;
 }
 
-h1 {
-  text-align: center;
-  color: var(--primary-color, #4a90e2);
-  margin-bottom: 1.5rem;
-  font-size: 2.2em;
-  font-weight: 700;
+/* Adjust filter controls layout */
+.filter-controls .v-col {
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
-.controls {
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: center;
+
+h1.text-primary {
+  color: rgb(var(--v-theme-primary));
 }
 
-.search-input {
-  width: 100%;
-  max-width: 400px;
-  padding: 0.8rem 1.2rem;
-  font-size: 1rem;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 25px;
-  transition:
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-color, #4a90e2);
-  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-}
-
-.loading-indicator,
-.error-message {
-  text-align: center;
-  padding: 2rem;
-  margin-top: 1rem;
-  border-radius: 8px;
-}
-
-.loading-indicator {
-  color: var(--light-text-color, #555);
-  font-size: 1.1em;
-}
-
-.error-message {
-  color: var(--error-color, #d9534f);
-  background-color: var(--error-bg-color, #f2dede);
-  border: 1px solid var(--error-border-color, #ebccd1);
-  font-size: 1.1em;
-}
-.error-message p:first-of-type {
+/* Style table headers */
+.cereals-table :deep(thead th) {
+  background-color: #f5f5f5; /* Light grey background */
+  color: #333; /* Darker text */
   font-weight: bold;
-  margin-bottom: 0.5rem;
-}
-
-.table-container {
-  overflow-x: auto; /* Allows table to scroll horizontally on small screens */
-}
-
-.cereals-table {
-  width: 100%;
-  border-collapse: collapse; /* Removes gaps between cells */
-  margin-top: 1rem;
-  font-size: 1rem;
-}
-
-.cereals-table th,
-.cereals-table td {
-  padding: 1rem 0.75rem; /* Vertical and horizontal padding */
-  text-align: left;
-  border-bottom: 1px solid var(--border-color, #e0e0e0); /* Separator lines */
-}
-
-.cereals-table th {
-  background-color: var(--bg-color, #f8f9fa); /* Light header background */
-  color: var(--text-color, #333);
-  font-weight: 600; /* Bolder headers */
-  position: sticky; /* Keep header visible on scroll */
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  position: sticky; /* Keep header sticky */
   top: 0; /* Stick to the top */
-  z-index: 1; /* Ensure header is above body */
+  z-index: 1; /* Ensure header is above scrolling content */
 }
 
-/* Zebra striping for better readability */
-.cereals-table tbody tr:nth-child(even) {
-  background-color: var(--bg-color, #f8f9fa);
+/* Add alternating row colors (striping) */
+.cereals-table :deep(tbody tr:nth-of-type(odd)) {
+  background-color: rgba(0, 0, 0, 0.02); /* Very light grey for odd rows */
 }
 
-.cereals-table tbody tr:hover {
-  background-color: var(--hover-bg-color, #f1f3f5); /* Highlight on hover */
-  cursor: default; /* Indicate non-interactive rows, change if rows become clickable */
+/* Add cursor pointer to indicate rows are clickable */
+.cereals-table :deep(tbody tr) {
+  cursor: pointer;
 }
 
-.no-results {
-  text-align: center;
-  color: var(--light-text-color, #555);
-  padding: 2rem;
-  font-style: italic;
+
+/* Adjust table cell padding */
+.cereals-table :deep(td),
+.cereals-table :deep(th) {
+  padding: 8px 16px; /* Adjust padding for compact density */
 }
 
-/* Responsive Adjustments */
-@media (max-width: 768px) {
+
+/* Responsive adjustments */
+@media (max-width: 960px) { /* Adjust breakpoint if needed */
+  .filter-controls .v-col {
+    padding-bottom: 12px; /* Add spacing between stacked filters */
+  }
+}
+
+@media (max-width: 600px) {
   .all-cereals-container {
-    margin: 1rem;
-    padding: 1.5rem;
+    padding: 1rem 0.5rem;
   }
-
   h1 {
-    font-size: 1.8em;
+    font-size: 1.8rem !important; /* Adjust heading size */
   }
-
-  .search-input {
-    max-width: 100%;
+  .cereals-table :deep(td),
+  .cereals-table :deep(th) {
+    padding: 6px 8px; /* Reduce padding further on small screens */
+    font-size: 0.75rem;
   }
-
-  .cereals-table th,
-  .cereals-table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.95rem; /* Slightly smaller font on smaller screens */
-  }
-}
-
-@media (max-width: 576px) {
-  .all-cereals-container {
-    margin: 0.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-  }
-
-  h1 {
-    font-size: 1.6em;
-  }
-
-  .cereals-table th,
-  .cereals-table td {
-    font-size: 0.9rem;
+  .cereals-table :deep(thead th) {
+     font-size: 0.7rem; /* Adjust header font size */
   }
 }
 </style>
