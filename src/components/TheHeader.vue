@@ -13,7 +13,6 @@ ac-uge-9-Frontend\src\components\TheHeader.vue
 <script>
 export default {
   name: 'TheHeader',
-  data() {},
 }
 </script>
 

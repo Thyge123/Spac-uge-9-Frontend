@@ -67,7 +67,7 @@
               :search="searchQuery"
               :loading="loading"
               loading-text="Loading Cereals..."
-              no-data-text="No cereals available matching your criteria."
+              no-data-text="Uh oh, this is not good. No cereals found."
               :items-per-page="15"
               class="elevation-1 cereals-table"
               item-value="name"
@@ -78,12 +78,12 @@
               @click:row="handleRowClick"
             >
               <!-- Custom Slot for Manufacturer Column: Display full name instead of code. -->
-              <template #item.mfr="{ item }">
+              <template v-slot:[`item.mfr`]="{ item }">
                 {{ getManufacturerFullName(item.mfr) }}
               </template>
 
               <!-- Custom Slot for Type Column: Display 'Hot'/'Cold' instead of 'H'/'C'. -->
-              <template #item.type="{ item }">
+              <template v-slot:[`item.type`]="{ item }">
                 {{ getCerealTypeFormatted(item.type) }}
               </template>
 

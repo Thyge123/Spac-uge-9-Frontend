@@ -14,7 +14,7 @@
     <!-- Main Content -->
     <div v-if="!loading && !error">
       <h1>Cereals Collection</h1>
-      <p class="text-center">Uh oh, looks like you found the cereal collection!<br /></p>
+      <p class="text-center">Wow, that's a lot of cereals!<br /></p>
       <!-- Something funny please-->
       <!-- Search bar -->
       <div class="search-controls">
@@ -46,7 +46,6 @@
             <v-slide-group-item v-for="cereal in filteredCereals" :key="cereal.id">
               <!-- The v-card, displaying our cereals. -->
               <v-card
-                :elevation="isSelected ? 10 : 3"
                 class="ma-3 cereal-card"
                 width="300"
                 rounded="lg"
@@ -257,12 +256,12 @@ h1 {
   display: flex; /* Use flexbox for internal layout. */
   flex-direction: column; /* Stack image and text vertically. */
   background-color: #fff; /* White background for the card. */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* A nice, soft shadow. */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* A nice, soft shadow. */
 }
 
 .cereal-card:hover {
   transform: translateY(-5px) scale(1.02); /* Lift and slightly enlarge on hover.*/
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); /* Make the shadow more pronounced on hover. */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); /* Make the shadow more pronounced on hover. */
 }
 
 /* Fine-tuning the text inside the card. */
