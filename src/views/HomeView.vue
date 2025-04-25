@@ -15,7 +15,7 @@
     <div v-if="!loading && !error">
       <h1>Cereals Collection</h1>
       <p class="text-center">Wow, that's a lot of cereals!<br /></p>
-      <!-- Something funny please-->
+
       <!-- Search bar -->
       <div class="search-controls">
         <v-text-field

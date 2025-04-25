@@ -1,6 +1,6 @@
 <template>
   <footer>
-    <p>&copy; {{ currentYear }} My Website. All rights reserved.</p>
+    <p>Proudly cataloging crunchy goodness since... well, recently. &copy; {{ currentYear }}</p>
   </footer>
 </template>
 
@@ -9,16 +9,16 @@ export default {
   name: 'TheFooter',
   data() {
     return {
-      currentYear: new Date().getFullYear()
-    };
-  }
+      currentYear: new Date().getFullYear(),
+    }
+  },
 }
 </script>
 
 <style scoped>
 footer {
   text-align: center;
-  padding: 1.5rem; /* Increased padding */
+  padding: 1.5rem;
   margin-top: auto; /* Pushes footer to bottom if main content is short */
   background-color: #333; /* Darker background */
   color: #eee; /* Lighter text color */

@@ -216,12 +216,14 @@ export default {
 /* Style the subtitle. */
 .v-card-subtitle {
   font-size: 1rem;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(0, 0, 0, 1);
+  font-weight: 600; /* Regular weight for subtitle. */
+  padding: 0 1.25rem; /* Add some padding for breathing room. */
 }
 
 /* Styling for the individual nutrient fact boxes. */
 .nutrient-item {
-  background-color: #f5f5f5; /* Light background for visual separation. */
+  background-color: #dddddd; /* Light background for visual separation. */
   padding: 8px 12px;
   border-radius: 4px; /* Slightly rounded corners. */
   margin-bottom: 8px; /* Space between items vertically. */
