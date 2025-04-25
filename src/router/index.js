@@ -4,36 +4,34 @@ import AllCereals from '@/views/AllCereals.vue'
 import CerealDetail from '@/views/CerealDetail.vue'
 
 const routes = [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView,
+  },
+  {
+    path: '/all-cereals',
+    name: 'all-cereals',
+    component: AllCereals,
+    meta: {
+      title: 'All Cereals',
     },
-    {
-      path: '/all-cereals',
-      name: 'all-cereals',
-      component: AllCereals,
-      meta: {
-        title: 'All Cereals',
-      },
+  },
+  {
+    path: '/cereal/:id',
+    name: 'CerealDetail',
+    component: CerealDetail,
+    meta: {
+      title: 'Cereal Detail',
     },
-    {
-
-      path: '/cereal/:id',
-      name: 'CerealDetail',
-      component: CerealDetail,
-      meta: {
-        title: 'Cereal Detail',
-      },
-      props: true,
-    },
-  ]
+    props: true,
+  },
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, savedPosition) {
-    // Always scroll to top
+  scrollBehavior() {
     return { top: 0 }
   },
 })

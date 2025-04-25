@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { FetchAllCerealsWithImages, FetchCerealById  } from '@/apis/apiservice.js'
+import { FetchAllCerealsWithImages, FetchCerealById } from '@/apis/apiservice.js'
 
 // Define the manufacturer map
 const manufacturerMap = {
@@ -22,29 +22,28 @@ export const useCerealStore = defineStore('cereals', {
     cereal: null, // To store a single cereal object
   }),
 
+  // Getters: Computed properties that derive state
   getters: {
     uniqueManufacturers: (state) => {
-      const manufacturers = new Set(state.cereals.map((cereal) => cereal.mfr)) // Use Set to get unique manufacturers
-      // Convert Set to array and sort it
+      const manufacturers = new Set(state.cereals.map((cereal) => cereal.mfr)) // Get unique manufacturers from the cereals array. Use Set to filter out duplicates
       return Array.from(manufacturers).sort()
     },
     getManufacturerFullName: () => {
-        return (code) => manufacturerMap[code] || code; // Return the full name or the code if not found
+      return (code) => manufacturerMap[code] || code // Return the full name or the code if not found.
     },
     // Getter for formatting cereal type
     getCerealTypeFormatted: () => {
       return (typeCode) => {
-        if (typeCode === 'C') return 'Cold';
-        if (typeCode === 'H') return 'Hot';
-        return typeCode; // Return original code if not C or H
-      };
-    }
+        if (typeCode === 'C') return 'Cold'
+        if (typeCode === 'H') return 'Hot'
+        return typeCode // Return original code if not C or H
+      }
+    },
   },
 
   // Actions: Methods that can be asynchronous and mutate the state
   actions: {
     async fetchCereals() {
-      // Access state using 'this'
       this.loading = true
       this.error = null
       try {
@@ -72,6 +71,6 @@ export const useCerealStore = defineStore('cereals', {
       } finally {
         this.loading = false
       }
-    }
+    },
   },
 })
