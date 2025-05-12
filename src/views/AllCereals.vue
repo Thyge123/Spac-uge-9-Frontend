@@ -25,6 +25,24 @@
       :cereal="cerealToEdit"
       @submit="handleCerealUpdated"
     />
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="showDeleteConfirmDialog" max-width="500px" persistent>
+      <v-card>
+        <v-card-title class="text-h5">Confirm Deletion</v-card-title>
+        <v-card-text>
+          Are you sure you want to delete the cereal "{{ itemToDeleteDetails.name }}"? This action
+          cannot be undone.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="closeDeleteConfirmDialog">Cancel</v-btn>
+          <v-btn color="red darken-1" text @click="executeDeleteCereal">Delete</v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- The Main Data Table Section -->
     <v-row justify="center">
       <v-col cols="12">
@@ -81,14 +99,14 @@
                     color="medium-emphasis"
                     icon="mdi-pencil"
                     size="small"
-                    @click.stop="edit(item)"
+                    @click.stop="editItem(item)"
                   ></v-icon>
 
                   <v-icon
                     color="medium-emphasis"
                     icon="mdi-delete"
                     size="small"
-                    @click.stop="remove(item.id)"
+                    @click.stop="openDeleteConfirmDialog(item)"
                   ></v-icon>
                 </div>
               </template>
@@ -154,14 +172,10 @@ export default {
         weight: null,
         rating: null,
       },
+      showDeleteConfirmDialog: false,
+      itemToDeleteDetails: { id: null, name: '' },
 
       // --- Table Configuration ---
-      // Defines the columns for the v-data-table.
-      // 'title' is the displayed header text.
-      // 'key' matches the property name in the cereal data objects.
-      // 'key' matches the property name in the cereal data objects.
-      // 'align' controls text alignment.
-      // 'sortable' allows users to sort by this column.
       headers: [
         { title: 'Cereal Name', key: 'name', align: 'start', sortable: true },
         { title: 'Manufacturer', key: 'mfr', sortable: true },
@@ -209,7 +223,6 @@ export default {
         filtered = filtered.filter((cereal) => cereal.type === this.selectedType)
       }
 
-      // Apply search query filter
       return filtered
     },
   },
@@ -239,85 +252,74 @@ export default {
     },
     async handleCerealAdded(cerealData) {
       try {
-        // Here you would typically call an action to add the cereal to your backend/store
-        console.log('New cereal data submitted:', cerealData)
-        // For example, if you have an action in your store:
         await this.createCereal(cerealData)
-        // Assuming you map/create this action
-        this.fetchCereals() // Refresh the list of cereals
-        // The modal closes itself on successful submit, and v-model updates showAddCerealModal
+        this.fetchCereals()
       } catch (err) {
         console.error('Error adding cereal:', err)
-        // Update your error state if needed
         this.error = err
-        // Or a more user-friendly message
       }
     },
     openUpdateCerealModal(cerealItem) {
-      // Find the full cereal object from the store's list to ensure all data is fresh
       const cerealData = this.cereals.find((c) => c.id === cerealItem.id)
       if (cerealData) {
-        this.cerealToEdit = { ...cerealData } // Pass a copy to avoid direct mutation
+        this.cerealToEdit = { ...cerealData }
         this.showUpdateCerealModal = true
       } else {
         console.error('Cereal data not found for editing:', cerealItem.id)
-        // Optionally, show an error to the user
       }
     },
 
     async handleCerealUpdated(updatedCerealData) {
       try {
         await this.updateCereal(updatedCerealData)
-        this.fetchCereals() // Refresh the list
-        this.showUpdateCerealModal = false // Close the modal
+        this.fetchCereals()
+        this.showUpdateCerealModal = false
       } catch (err) {
         console.error('Error updating cereal:', err)
-        this.error = err // Display error
+        this.error = err
       }
     },
-    edit(item) {
-      // Changed parameter to be the full item
-      // The 'item' passed from the v-data-table slot is the actual cereal object
-      // Ensure you are passing the item itself, not just item.id if you change the @click handler
-      // If `item` is just an ID, you'll need to find it in `this.cereals` first.
-      // Assuming `item` is the cereal object from the table row:
+    editItem(item) {
       if (item && item.id) {
         this.openUpdateCerealModal(item)
       } else {
-        // If item is just an ID (e.g. if you changed @click="edit(item.id)")
-        const cerealToUpdate = this.cereals.find((c) => c.id === item)
-        if (cerealToUpdate) {
-          this.openUpdateCerealModal(cerealToUpdate)
-        } else {
-          console.error('Could not find cereal to edit with ID:', item)
-        }
+        console.error('Invalid item passed to editItem method:', item)
+        // Optionally, inform the user that the item cannot be edited.
       }
     },
 
-    async remove(itemId) {
-      // Optional: Add a confirmation dialog here before deleting
-      if (confirm('Are you sure you want to delete this cereal? Id: ' + itemId)) {
-        try {
-          await this.deleteCereal(itemId)
-          this.fetchCereals() // Refresh the list
-        } catch (err) {
-          console.error('Error deleting cereal:', err)
-          this.error = err // Display error
-        }
+    openDeleteConfirmDialog(item) {
+      if (item && item.id) {
+        this.itemToDeleteDetails = { id: item.id, name: item.name || 'this item' }
+        this.showDeleteConfirmDialog = true
+      } else {
+        console.error('Invalid item provided for deletion:', item)
       }
     },
-    // Method called when a table row is clicked.
-    // The event object and item data are passed automatically by v-data-table.
+
+    closeDeleteConfirmDialog() {
+      this.showDeleteConfirmDialog = false
+      this.itemToDeleteDetails = { id: null, name: '' }
+    },
+
+    async executeDeleteCereal() {
+      if (!this.itemToDeleteDetails.id) return
+
+      try {
+        await this.deleteCereal(this.itemToDeleteDetails.id)
+        this.fetchCereals() // Refresh the list
+      } catch (err) {
+        console.error('Error deleting cereal:', err)
+        this.error = err // Display error in the existing error alert
+      } finally {
+        this.closeDeleteConfirmDialog()
+      }
+    },
     handleRowClick(event, { item }) {
-      // Vuetify's item structure can sometimes be nested under 'value' or 'raw'.
-      // We try to get the actual data object robustly.
       const actualItem = item.value || item.raw || item
-      // Check if we have a valid item with an ID and if the router is available.
       if (actualItem && actualItem.id && this.$router) {
-        // Navigate to the CerealDetail page, passing the clicked cereal's ID as a route parameter.
         this.$router.push({ name: 'CerealDetail', params: { id: actualItem.id } })
       } else {
-        // Log an error if navigation fails (e.g., missing ID or router).
         console.error(
           'Could not navigate to detail view. Item or router missing?',
           actualItem,
@@ -327,7 +329,6 @@ export default {
     },
   },
   mounted() {
-    // Call the mapped action, check if data needs fetching
     if (!this.cereals || this.cereals.length === 0) {
       this.fetchCereals()
     }
@@ -336,6 +337,7 @@ export default {
 </script>
 
 <style scoped>
+/* ...existing code... */
 .all-cereals-container {
   padding: 2rem 1rem; /* Add some space around the content. */
   font-family: Poppins, sans-serif; /* Consistent font. */
