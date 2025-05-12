@@ -24,7 +24,10 @@
 
       <div class="carousels-container">
         <!-- All Cereals Section -->
-        <section class="carousel-section featured">
+        <section
+          v-if="!selectedManufacturer && filteredCereals.length > 0"
+          class="carousel-section featured"
+        >
           <div class="carousel-header">
             <h2>All Cereals</h2>
             <v-btn variant="outlined" size="small" rounded to="/all-cereals" class="show-all-btn"

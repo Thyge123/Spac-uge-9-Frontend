@@ -12,7 +12,7 @@
       <button type="submit">Login</button>
       <div v-if="error" class="error">{{ error }}</div>
       <div v-if="loading" class="loading">Loading...</div>
-      <div v-if="success" class="success">Login successful!</div>
+      <div v-if="success" class="success">{{ successMessage }}</div>
     </form>
     <div class="links">
       <router-link to="/register">Register</router-link>
@@ -34,6 +34,7 @@ export default {
       error: null,
       loading: false,
       success: false,
+      successMessage: '',
     }
   },
   computed: {
@@ -48,10 +49,11 @@ export default {
       try {
         await this.login({ username: this.username, password: this.password })
         this.success = true
+        this.successMessage = 'Login successful!'
         // Redirect to the home page or dashboard after successful login
-        this.$router.push('/')
+        this.$router.push('/home')
       } catch (err) {
-        this.error = err || 'Invalid username or password'
+        this.error = err.response?.data?.message || 'Invalid username or password'
       } finally {
         this.loading = false
       }
@@ -166,7 +168,6 @@ button[type='submit']:hover {
 }
 
 .links {
-  margin-top: 2rem;
   display: flex;
   gap: 1.5rem; /* Space between links */
   justify-content: center;

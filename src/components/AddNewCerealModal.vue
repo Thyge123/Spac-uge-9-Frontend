@@ -87,6 +87,12 @@
             type="number"
             required
           ></v-text-field>
+          <v-text-field
+            v-model="cerealData.rating"
+            label="Rating"
+            type="number"
+            required
+          ></v-text-field>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -199,6 +205,7 @@ export default {
         potass: this.cereal?.potass ?? null,
         cups: this.cereal?.cups ?? null,
         weight: this.cereal?.weight ?? null,
+        rating: this.cereal?.rating ?? null,
       }
     },
     // Resets the form data and validation state

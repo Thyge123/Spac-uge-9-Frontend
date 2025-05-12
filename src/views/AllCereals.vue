@@ -152,6 +152,7 @@ export default {
         potassium: null,
         cups: null,
         weight: null,
+        rating: null,
       },
 
       // --- Table Configuration ---
@@ -232,6 +233,7 @@ export default {
         potassium: null,
         cups: null,
         weight: null,
+        rating: null,
       }
       this.showAddCerealModal = true
     },

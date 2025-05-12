@@ -82,6 +82,13 @@
             type="number"
             required
           ></v-text-field>
+          <v-text-field
+            v-model="cerealData.rating"
+            label="Rating"
+            type="number"
+            min="0"
+            required
+          ></v-text-field>
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -197,6 +204,7 @@ export default {
         potass: currentCereal.potass ?? null,
         cups: currentCereal.cups ?? null,
         weight: currentCereal.weight ?? null,
+        rating: currentCereal.rating ?? null,
       }
     },
     resetFormAndData() {

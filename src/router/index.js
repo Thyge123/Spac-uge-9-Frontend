@@ -4,6 +4,7 @@ import AllCereals from '@/views/AllCereals.vue'
 import CerealDetail from '@/views/CerealDetail.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import RegisterUser from '@/views/RegisterUser.vue'
+import { useCerealStore } from '@/stores/cerealStore'
 
 const routes = [
   {
@@ -34,6 +35,14 @@ const routes = [
     component: LoginPage,
     meta: {
       title: 'Login',
+    },
+    beforeEnter: (to, from, next) => {
+      const store = useCerealStore()
+      if (store.isAuthenticated) {
+        next({ name: 'home' }) // Redirect to home if already logged in
+      } else {
+        next() // Proceed to login page
+      }
     },
   },
   {
