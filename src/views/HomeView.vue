@@ -34,37 +34,12 @@
               >Show all</v-btn
             >
           </div>
-          <!-- Using v-slide-group -->
-          <v-slide-group show-arrows class="py-4">
-            <!-- Here we loop through our filtered cereals.-->
-            <v-slide-group-item v-for="cereal in filteredCereals" :key="cereal.id">
-              <!-- The v-card, displaying our cereals. -->
-              <v-card
-                class="ma-3 cereal-card"
-                width="300"
-                rounded="lg"
-                hover
-                @click="handleCerealClick(cereal)"
-              >
-                <v-img
-                  :src="baseURL + cereal.picture"
-                  :alt="cereal.name"
-                  height="200px"
-                  contain
-                  class="bg-grey-lighten-2"
-                ></v-img>
-                <div class="card-content pa-4">
-                  <v-card-title class="text-subtitle-1 font-weight-medium pa-0 mb-1">
-                    {{ cereal.name }}
-                  </v-card-title>
-                  <v-card-subtitle class="text-body-2 pa-0">
-                    <!-- Using our getter to show the full manufacturer name.-->
-                    By: {{ getManufacturerFullName(cereal.mfr) }}
-                  </v-card-subtitle>
-                </div>
-              </v-card>
-            </v-slide-group-item>
-          </v-slide-group>
+          <CerealCarousel
+            :cereals="filteredCereals"
+            :baseURL="baseURL"
+            :manufacturer-full-name="getManufacturerFullName"
+            @cereal-clicked="handleCerealClick"
+          />
         </section>
 
         <!-- Manufacturer Sections: Dynamically creating rows for each brand. Neat! -->
@@ -77,37 +52,13 @@
           >
             <!-- Displaying the manufacturer's full name, because 'G' isn't very descriptive. -->
             <h2>{{ getManufacturerFullName(mfrCode) }}</h2>
-            <!-- Using v-slide-group -->
-            <v-slide-group show-arrows="always" class="py-4">
-              <v-slide-group-item
-                v-for="cereal in getCerealsByManufacturer(mfrCode)"
-                :key="cereal.id"
-              >
-                <v-card
-                  class="ma-3 cereal-card"
-                  width="300"
-                  rounded="lg"
-                  hover
-                  @click="handleCerealClick(cereal)"
-                >
-                  <v-img
-                    :src="baseURL + cereal.picture"
-                    :alt="cereal.name"
-                    height="200px"
-                    contain
-                    class="bg-grey-lighten-2"
-                  ></v-img>
-                  <div class="card-content pa-4">
-                    <v-card-title class="text-subtitle-1 font-weight-medium pa-0 mb-1">
-                      {{ cereal.name }}
-                    </v-card-title>
-                    <v-card-subtitle class="text-body-2 pa-0">
-                      By: {{ getManufacturerFullName(cereal.mfr) }}
-                    </v-card-subtitle>
-                  </div>
-                </v-card>
-              </v-slide-group-item>
-            </v-slide-group>
+            <CerealCarousel
+              :cereals="getCerealsByManufacturer(mfrCode)"
+              :baseURL="baseURL"
+              :manufacturer-full-name="getManufacturerFullName"
+              :show-arrows-behavior="'always'"
+              @cereal-clicked="handleCerealClick"
+            />
           </section>
         </template>
 
@@ -132,11 +83,14 @@ import { useCerealStore } from '@/stores/cerealStore.js'
 
 // Importing the SearchBar component for our search functionality.
 import SearchBar from '@/components/SearchBar.vue'
+// Import the new CerealCarousel component
+import CerealCarousel from '@/components/CerealCarousel.vue'
 
 export default {
   name: 'HomeView',
   components: {
     SearchBar, // Registering the SearchBar component.
+    CerealCarousel, // Registering the new CerealCarousel component
   },
   data() {
     return {
@@ -284,46 +238,10 @@ h1 {
   color: rgb(var(--v-theme-primary));
 }
 
-/* Styling the individual cereal cards. */
-.cereal-card {
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease !important; /* Smooth hover animation. !important might be needed if Vuetify is stubborn. */
-  display: flex; /* Use flexbox for internal layout. */
-  flex-direction: column; /* Stack image and text vertically. */
-  background-color: #fff; /* White background for the card. */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* A nice, soft shadow. */
-}
-
-.cereal-card:hover {
-  transform: translateY(-5px) scale(1.02); /* Lift and slightly enlarge on hover.*/
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); /* Make the shadow more pronounced on hover. */
-}
-
-/* Fine-tuning the text inside the card. */
-.cereal-card .v-card-title {
-  line-height: 1.4; /* Improve readability if the name wraps. */
-  word-break: break-word; /* Prevent long names from overflowing the card. */
-  white-space: normal; /* Allow text to wrap naturally. */
-  font-weight: 600; /* Make the title a bit bolder. */
-  color: #333; /* Dark grey for good contrast. */
-}
-
-.cereal-card .v-card-subtitle {
-  color: #666; /* Lighter grey for the subtitle. */
-}
-
-/* The container for the text content below the image. */
-.card-content {
-  flex-grow: 1; /* Allow this area to take up remaining vertical space. */
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Center the text vertically if there's extra space. */
-  padding: 1rem; /* Consistent padding inside the content area. */
-}
+/* Styles for .cereal-card, .card-content etc. have been moved to CerealCarousel.vue */
 
 /* Styles for loading, error, and no-results messages. */
-.loading-indicator,
+.loading-indicator, /* .loading-indicator class was not used, but kept for consistency if added later */
 .error-message,
 .no-results {
   text-align: center; /* Center the text. */
@@ -332,8 +250,10 @@ h1 {
   max-width: 600px; /* Keep it from getting too wide. */
 }
 
-.loading-indicator p {
-  margin-top: 1rem; /* Space between spinner and text. */
+.loading-indicator p, /* Style for p inside .loading-indicator if used */
+.error-message p:first-of-type, /* Add some margin to the first paragraph of error message */
+.no-results p {
+  margin-top: 1rem; /* Space between spinner/icon and text. */
 }
 
 /* Responsive Adjustments */
