@@ -16,20 +16,11 @@
       <h1>Cereals Collection</h1>
       <p class="text-center">Wow, that's a lot of cereals!<br /></p>
 
-      <!-- Search bar -->
-      <div class="search-controls">
-        <v-text-field
-          v-model="searchQuery"
-          label="Search cereals by name"
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="compact"
-          hide-details
-          clearable
-          rounded="pill"
-          class="filter-input"
-        ></v-text-field>
-      </div>
+      <SearchBar
+        v-model:searchQuery="searchQuery"
+        v-model:selectedManufacturer="selectedManufacturer"
+        v-model:selectedType="selectedType"
+      />
 
       <div class="carousels-container">
         <!-- All Cereals Section -->
@@ -75,13 +66,20 @@
 
         <!-- Manufacturer Sections: Dynamically creating rows for each brand. Neat! -->
         <template v-if="filteredCereals.length > 0">
-          <!-- Loop through the unique manufacturers we found earlier. -->
-          <section v-for="mfr in uniqueManufacturers" :key="mfr" class="carousel-section">
+          <!-- Loop through the manufacturers determined by filters. -->
+          <section
+            v-for="mfrCode in manufacturersToDisplay"
+            :key="mfrCode"
+            class="carousel-section"
+          >
             <!-- Displaying the manufacturer's full name, because 'G' isn't very descriptive. -->
-            <h2>{{ getManufacturerFullName(mfr) }}</h2>
+            <h2>{{ getManufacturerFullName(mfrCode) }}</h2>
             <!-- Using v-slide-group -->
             <v-slide-group show-arrows="always" class="py-4">
-              <v-slide-group-item v-for="cereal in getCerealsByManufacturer(mfr)" :key="cereal.id">
+              <v-slide-group-item
+                v-for="cereal in getCerealsByManufacturer(mfrCode)"
+                :key="cereal.id"
+              >
                 <v-card
                   class="ma-3 cereal-card"
                   width="300"
@@ -129,12 +127,19 @@ import { mapState, mapActions } from 'pinia'
 // Importing our dedicated cereal store.
 import { useCerealStore } from '@/stores/cerealStore.js'
 
+// Importing the SearchBar component for our search functionality.
+import SearchBar from '@/components/SearchBar.vue'
+
 export default {
   name: 'HomeView',
-
+  components: {
+    SearchBar, // Registering the SearchBar component.
+  },
   data() {
     return {
       searchQuery: '',
+      selectedManufacturer: null, // For the manufacturer filter.
+      selectedType: null, // For the type filter (Hot/Cold).
     }
   },
   computed: {
@@ -150,12 +155,40 @@ export default {
 
     // A local computed property. It recalculates automatically when `searchQuery` or `cereals` changes.
     filteredCereals() {
-      // If the search bar is empty, just show everything.
-      if (!this.searchQuery) return this.cereals // Accessing the 'cereals' from mapState.
-      // Make the search case-insensitive.
-      const lowerCaseQuery = this.searchQuery.toLowerCase()
-      // Filter the main list. Keep only cereals whose names include the search query.
-      return this.cereals.filter((cereal) => cereal.name.toLowerCase().includes(lowerCaseQuery))
+      let filtered = this.cereals
+
+      // Apply manufacturer filter
+      if (this.selectedManufacturer) {
+        filtered = filtered.filter((cereal) => cereal.mfr === this.selectedManufacturer)
+      }
+
+      // Apply type filter
+      if (this.selectedType) {
+        filtered = filtered.filter((cereal) => cereal.type === this.selectedType)
+      }
+
+      // Apply search query filter
+      if (this.searchQuery && this.searchQuery.trim() !== '') {
+        const lowerCaseQuery = this.searchQuery.toLowerCase()
+        filtered = filtered.filter((cereal) => cereal.name.toLowerCase().includes(lowerCaseQuery))
+      }
+
+      return filtered
+    },
+    manufacturersToDisplay() {
+      if (this.selectedManufacturer) {
+        // If a specific manufacturer is selected, and they have cereals matching all current filters
+        // (which `filteredCereals` already ensures), then only list that manufacturer.
+        return this.filteredCereals.length > 0 ? [this.selectedManufacturer] : []
+      } else {
+        // If no specific manufacturer is selected, list all manufacturers from `uniqueManufacturers`
+        // that have at least one cereal in the current `filteredCereals` list.
+        // This ensures we don't show empty carousels for manufacturers
+        // if other filters (e.g., selectedType) have removed all their cereals.
+        return this.uniqueManufacturers.filter((mfrCode) =>
+          this.filteredCereals.some((cereal) => cereal.mfr === mfrCode),
+        )
+      }
     },
   },
   methods: {

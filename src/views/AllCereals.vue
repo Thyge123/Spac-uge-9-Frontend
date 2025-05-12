@@ -7,54 +7,24 @@
       </v-col>
     </v-row>
 
-    <!-- Filter Controls Section. -->
-    <v-row justify="center" class="mb-4 filter-controls">
-      <v-col cols="12" md="6" lg="4">
-        <!-- Search Input -->
-        <v-text-field
-          v-model="searchQuery"
-          label="Search cereals by name"
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          density="compact"
-          hide-details
-          clearable
-          rounded="pill"
-          class="filter-input"
-        ></v-text-field>
-      </v-col>
-
-      <!-- Manufacturer Dropdown -->
-      <v-col cols="12" md="3" lg="2">
-        <v-select
-          v-model="selectedManufacturer"
-          :items="manufacturerOptions"
-          label="Manufacturer"
-          variant="outlined"
-          density="compact"
-          hide-details
-          clearable
-          rounded="pill"
-          class="filter-input"
-        ></v-select>
-      </v-col>
-
-      <!-- Type Dropdown (Hot/Cold) -->
-      <v-col cols="12" md="3" lg="2">
-        <v-select
-          v-model="selectedType"
-          :items="typeOptions"
-          label="Type"
-          variant="outlined"
-          density="compact"
-          hide-details
-          clearable
-          rounded="pill"
-          class="filter-input"
-        ></v-select>
-      </v-col>
-    </v-row>
-
+    <div class="SearchAndButton">
+      <SearchBar
+        v-model:searchQuery="searchQuery"
+        v-model:selectedManufacturer="selectedManufacturer"
+        v-model:selectedType="selectedType"
+      />
+    </div>
+    <AddNewCerealModal
+      v-model="showAddCerealModal"
+      :cereal="newCerealTemplate"
+      @submit="handleCerealAdded"
+    />
+    <UpdateCerealModal
+      v-if="cerealToEdit"
+      v-model="showUpdateCerealModal"
+      :cereal="cerealToEdit"
+      @submit="handleCerealUpdated"
+    />
     <!-- The Main Data Table Section -->
     <v-row justify="center">
       <v-col cols="12">
@@ -77,6 +47,19 @@
               height="600px"
               @click:row="handleRowClick"
             >
+              <template v-slot:top>
+                <v-toolbar flat>
+                  <v-toolbar-title> </v-toolbar-title>
+                  <v-btn
+                    class="me-2"
+                    prepend-icon="mdi-plus"
+                    rounded="lg"
+                    text="Add New Cereal"
+                    border
+                    @click="openAddCerealModal"
+                  ></v-btn>
+                </v-toolbar>
+              </template>
               <!-- Custom Slot for Manufacturer Column: Display full name instead of code. -->
               <template v-slot:[`item.mfr`]="{ item }">
                 {{ getManufacturerFullName(item.mfr) }}
@@ -90,6 +73,24 @@
               <!-- Custom Slot for Loading State: Show skeleton loaders. -->
               <template v-slot:loading>
                 <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
+              </template>
+
+              <template v-slot:[`item.actions`]="{ item }">
+                <div class="d-flex ga-2 justify-end">
+                  <v-icon
+                    color="medium-emphasis"
+                    icon="mdi-pencil"
+                    size="small"
+                    @click.stop="edit(item)"
+                  ></v-icon>
+
+                  <v-icon
+                    color="medium-emphasis"
+                    icon="mdi-delete"
+                    size="small"
+                    @click.stop="remove(item.id)"
+                  ></v-icon>
+                </div>
               </template>
 
               <!-- Custom Slot for No Results: Show a helpful message. -->
@@ -116,18 +117,47 @@ import { mapState, mapActions } from 'pinia'
 // Import the specific store we need.
 import { useCerealStore } from '@/stores/cerealStore.js'
 
+import SearchBar from '@/components/SearchBar.vue'
+import AddNewCerealModal from '@/components/AddNewCerealModal.vue'
+import UpdateCerealModal from '@/components/UpdateCerealModal.vue'
+
 export default {
   name: 'AllCereals',
-
+  components: {
+    SearchBar,
+    AddNewCerealModal,
+    UpdateCerealModal,
+  },
   data() {
     return {
       searchQuery: '', // Holds the text entered in the search bar.
       selectedManufacturer: null, // Holds the selected manufacturer code (e.g., 'G', 'K'). Null means 'All'.
       selectedType: null, // Holds the selected type code ('C' or 'H'). Null means 'All'.
+      showAddCerealModal: false, // Controls modal visibility
+      showUpdateCerealModal: false,
+      cerealToEdit: null,
+      newCerealTemplate: {
+        name: '',
+        mfr: '',
+        type: null,
+        calories: null,
+        protein: null,
+        fat: null,
+        sodium: null,
+        fiber: null,
+        carbs: null,
+        sugars: null,
+        vitamins: null,
+        shelf: null,
+        potassium: null,
+        cups: null,
+        weight: null,
+      },
 
       // --- Table Configuration ---
       // Defines the columns for the v-data-table.
       // 'title' is the displayed header text.
+      // 'key' matches the property name in the cereal data objects.
       // 'key' matches the property name in the cereal data objects.
       // 'align' controls text alignment.
       // 'sortable' allows users to sort by this column.
@@ -148,11 +178,7 @@ export default {
         { title: 'Cups', key: 'cups', sortable: true },
         { title: 'Weight (kg)', key: 'weight', sortable: true },
         { title: 'Rating', key: 'rating', sortable: true },
-      ],
-      // Define options for the type filter dropdown
-      typeOptions: [
-        { title: 'Cold', value: 'C' },
-        { title: 'Hot', value: 'H' },
+        { title: 'Actions', key: 'actions', align: 'end', sortable: false },
       ],
     }
   },
@@ -167,20 +193,6 @@ export default {
       'getManufacturerFullName',
       'getCerealTypeFormatted',
     ]),
-
-    // Format manufacturer options for the v-select
-    manufacturerOptions() {
-      // Ensure uniqueManufacturers is available and is an array
-      if (!Array.isArray(this.uniqueManufacturers)) {
-        return []
-      }
-      return this.uniqueManufacturers
-        .map((mfr) => ({
-          title: this.getManufacturerFullName(mfr), // Get full name using the getter
-          value: mfr, // Keep the abbreviation as the value
-        }))
-        .sort((a, b) => a.title.localeCompare(b.title)) // Sort alphabetically by full name
-    },
 
     // Computed property to filter cereals based on selections
     filteredCereals() {
@@ -202,8 +214,96 @@ export default {
   },
   methods: {
     // Map actions from the store
-    ...mapActions(useCerealStore, ['fetchCereals']),
+    ...mapActions(useCerealStore, ['fetchCereals', 'createCereal', 'updateCereal', 'deleteCereal']),
+    openAddCerealModal() {
+      this.newCerealTemplate = {
+        name: '',
+        mfr: '',
+        type: null,
+        calories: null,
+        protein: null,
+        fat: null,
+        sodium: null,
+        fiber: null,
+        carbs: null,
+        sugars: null,
+        vitamins: null,
+        shelf: null,
+        potassium: null,
+        cups: null,
+        weight: null,
+      }
+      this.showAddCerealModal = true
+    },
+    async handleCerealAdded(cerealData) {
+      try {
+        // Here you would typically call an action to add the cereal to your backend/store
+        console.log('New cereal data submitted:', cerealData)
+        // For example, if you have an action in your store:
+        await this.createCereal(cerealData)
+        // Assuming you map/create this action
+        this.fetchCereals() // Refresh the list of cereals
+        // The modal closes itself on successful submit, and v-model updates showAddCerealModal
+      } catch (err) {
+        console.error('Error adding cereal:', err)
+        // Update your error state if needed
+        this.error = err
+        // Or a more user-friendly message
+      }
+    },
+    openUpdateCerealModal(cerealItem) {
+      // Find the full cereal object from the store's list to ensure all data is fresh
+      const cerealData = this.cereals.find((c) => c.id === cerealItem.id)
+      if (cerealData) {
+        this.cerealToEdit = { ...cerealData } // Pass a copy to avoid direct mutation
+        this.showUpdateCerealModal = true
+      } else {
+        console.error('Cereal data not found for editing:', cerealItem.id)
+        // Optionally, show an error to the user
+      }
+    },
 
+    async handleCerealUpdated(updatedCerealData) {
+      try {
+        await this.updateCereal(updatedCerealData)
+        this.fetchCereals() // Refresh the list
+        this.showUpdateCerealModal = false // Close the modal
+      } catch (err) {
+        console.error('Error updating cereal:', err)
+        this.error = err // Display error
+      }
+    },
+    edit(item) {
+      // Changed parameter to be the full item
+      // The 'item' passed from the v-data-table slot is the actual cereal object
+      // Ensure you are passing the item itself, not just item.id if you change the @click handler
+      // If `item` is just an ID, you'll need to find it in `this.cereals` first.
+      // Assuming `item` is the cereal object from the table row:
+      if (item && item.id) {
+        this.openUpdateCerealModal(item)
+      } else {
+        // If item is just an ID (e.g. if you changed @click="edit(item.id)")
+        const cerealToUpdate = this.cereals.find((c) => c.id === item)
+        if (cerealToUpdate) {
+          this.openUpdateCerealModal(cerealToUpdate)
+        } else {
+          console.error('Could not find cereal to edit with ID:', item)
+        }
+      }
+    },
+
+    async remove(itemId) {
+      // Optional: Add a confirmation dialog here before deleting
+      if (confirm('Are you sure you want to delete this cereal? Id: ' + itemId)) {
+        try {
+          await this.deleteCereal(itemId)
+          this.fetchCereals() // Refresh the list
+        } catch (err) {
+          console.error('Error deleting cereal:', err)
+          this.error = err // Display error
+        }
+      }
+    },
     // Method called when a table row is clicked.
     // The event object and item data are passed automatically by v-data-table.
     handleRowClick(event, { item }) {
@@ -239,15 +339,25 @@ export default {
   font-family: Poppins, sans-serif; /* Consistent font. */
 }
 
-/* Adjust vertical padding for filter control columns. */
-.filter-controls .v-col {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
 /* Ensure the h1 title uses the primary theme color. */
 h1.text-primary {
   color: rgb(var(--v-theme-primary));
+}
+
+.SearchAndButton {
+  display: flex; /* Use flexbox for layout. */
+}
+
+.show-all-btn {
+  text-transform: none; /* Keep the text casing as written. */
+  font-weight: 500;
+  font-size: 0.9em;
+  border-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-primary));
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease; /* Smooth hover effect. */
+  height: 40px !important;
 }
 
 /* Style the table header cells. */
