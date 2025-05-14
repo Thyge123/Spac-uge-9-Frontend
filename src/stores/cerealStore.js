@@ -231,6 +231,11 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function to delete a user.
         const response = await DeleteUser(id)
+        this.authToken = null
+        this.user = null
+        localStorage.removeItem('authToken')
+        setAuthToken(null)
+        localStorage.removeItem('user') // Clear user from localStorage
         return response.data || null
       } catch (err) {
         // If the deletion fails...

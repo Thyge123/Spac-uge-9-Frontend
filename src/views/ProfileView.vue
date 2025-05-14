@@ -190,9 +190,8 @@ export default {
       this.loading = true
       this.deleteUser(this.itemToDeleteDetails.id)
         .then(() => {
-          alert('Profile deleted successfully!')
           this.closeDeleteConfirmDialog()
-          this.$router.push('/login')
+          this.$router.push('/')
         })
         .catch((error) => {
           console.error('Error deleting profile:', error)
