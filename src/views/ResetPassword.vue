@@ -1,57 +1,96 @@
 <template>
-  <div class="login-page">
-    <form @submit.prevent="handleRegister">
-      <div>
+  <div class="reset-password-page">
+    <h1>Reset Password</h1>
+    <p style="font-style: italic">Yes, this is not a good idea. Demonstration purposes only.</p>
+    <form @submit.prevent="handleResetPassword">
+      <div v-if="!userExists">
         <label for="username">Username:</label>
         <input type="text" id="username" v-model="username" required />
+        <button type="button" @click="checkUserExists">Verify Username</button>
       </div>
-      <div>
-        <label for="password">Password:</label>
-        <input type="password" id="password" v-model="password" required />
+
+      <div v-if="userExists">
+        <label for="newPassword">New Password:</label>
+        <input type="password" id="newPassword" v-model="newPassword" required />
+        <button type="submit">Reset Password</button>
       </div>
-      <button type="submit">Register</button>
+
       <div v-if="error" class="error">{{ error }}</div>
       <div v-if="loading" class="loading">Loading...</div>
-      <div v-if="success" class="success">Registration successful!</div>
+      <div v-if="success" class="success">Password reset successfully!</div>
     </form>
     <div class="links">
       <router-link to="/login">Login</router-link>
-      <router-link to="/reset-password">Forgot Password?</router-link>
+      <router-link to="/register">Register</router-link>
     </div>
   </div>
 </template>
 
 <script>
-import { mapState, mapActions } from 'pinia'
-// Import the specific store we need.
+import { mapActions } from 'pinia'
+
 import { useCerealStore } from '@/stores/cerealStore.js'
+
 export default {
-  name: 'LoginPage',
+  name: 'ResetPasswordPage',
   data() {
     return {
+      id: null,
       username: '',
-      password: '',
+      newPassword: '',
       error: null,
       loading: false,
       success: false,
+      userExists: false, // Track if the user exists
     }
   },
-  computed: {
-    ...mapState(useCerealStore, ['user']),
-  },
   methods: {
-    ...mapActions(useCerealStore, ['createUser']),
-    async handleRegister() {
+    ...mapActions(useCerealStore, ['updateUser', 'fetchUserByUsername']), //
+    async checkUserExists() {
+      if (!this.username) {
+        this.error = 'Please enter a username.'
+        return
+      }
+      this.loading = true
+      this.error = null
+      this.success = false
+      this.userExists = false
+      try {
+        const user = await this.fetchUserByUsername(this.username)
+        if (user) {
+          this.userExists = true
+          this.id = user.id // Store the user's ID
+        } else {
+          this.error = 'User not found.'
+        }
+      } catch (err) {
+        this.error = err.message || 'Error verifying user.'
+      } finally {
+        this.loading = false
+      }
+    },
+    async handleResetPassword() {
+      if (!this.newPassword) {
+        this.error = 'Please enter a new password.'
+        return
+      }
       this.loading = true
       this.error = null
       this.success = false
       try {
-        await this.createUser({ username: this.username, password: this.password, role: 'Admin' })
+        await this.updateUser({
+          id: this.id,
+          username: this.username,
+          password: this.newPassword,
+          role: 'Admin',
+        })
         this.success = true
-        // Redirect to the login page after successful registration
-        this.$router.push('/login')
+        this.username = '' // Clear username
+        this.newPassword = '' // Clear password
+        this.userExists = false // Reset user verification state
+        setTimeout(() => this.$router.push('/login'), 2000) // Redirect after 500 milliseconds
       } catch (err) {
-        this.error = err || 'Invalid username or password'
+        this.error = err.message || 'An error occurred while resetting the password'
       } finally {
         this.loading = false
       }
@@ -61,12 +100,11 @@ export default {
 </script>
 
 <style scoped>
-.login-page {
+.reset-password-page {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   padding: 2rem;
   background-color: #f4f7f6; /* Light, neutral background */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
@@ -74,7 +112,6 @@ export default {
 
 h1 {
   color: #333;
-  margin-bottom: 2rem;
   font-weight: 300; /* Lighter font weight for a modern feel */
   font-size: 2.5rem;
 }
@@ -119,7 +156,8 @@ input[type='password']:focus {
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-button[type='submit'] {
+button[type='submit'],
+button[type='button'] {
   padding: 0.75rem;
   background-color: #007bff; /* Primary button color */
   color: white;
@@ -129,10 +167,11 @@ button[type='submit'] {
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  margin-top: 0.5rem; /* Add some space above the button */
+  margin-top: 1.5rem; /* Add some space above the button */
 }
 
-button[type='submit']:hover {
+button[type='submit']:hover,
+button[type='button']:hover {
   background-color: #0056b3; /* Darker shade on hover */
 }
 

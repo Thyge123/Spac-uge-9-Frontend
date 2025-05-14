@@ -1,5 +1,7 @@
 // Pinia: The state management library that makes Vue components less stressed.
 import { defineStore } from 'pinia'
+import { jwtDecode } from 'jwt-decode' // Import jwt-decode
+
 // Our custom API service functions. Like little messengers fetching data.
 import {
   FetchAllCerealsWithImages,
@@ -10,6 +12,10 @@ import {
   Login,
   setAuthToken,
   CreateUser,
+  FetchUserProfile,
+  FetchUserByUsername,
+  UpdateUser,
+  DeleteUser,
 } from '@/apis/apiservice.js'
 
 // Define the manufacturer map: Translating cryptic codes into actual company names.
@@ -35,7 +41,7 @@ export const useCerealStore = defineStore('cereals', {
     baseURL: 'https://localhost:7226', // The root URL for fetching cereal images.
     cereal: null, // Holds a single cereal object, for the detail view. Starts lonely.
     authToken: localStorage.getItem('authToken') || null, // Initialize token from localStorage
-    user: null,
+    user: JSON.parse(localStorage.getItem('user')) || null,
   }),
 
   // Getters: Computed properties derived from the state.
@@ -75,7 +81,6 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function.
         const response = await FetchAllCerealsWithImages()
-        console.log('Action: fetchCereals response received', response)
         // Update the state with the fetched data. Ensure it's an array, even if the API returns weird stuff.
         this.cereals = response.data || []
       } catch (err) {
@@ -97,7 +102,6 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function to get a specific cereal. Await the result.
         const response = await FetchCerealById(id)
-        console.log('Action: fetchCerealById response received', response)
         // Update the 'cereal' state property with the fetched data, or null if nothing came back.
         this.cereal = response.data || null
       } catch (err) {
@@ -118,7 +122,6 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function to create a new cereal.
         const response = await CreateCereal(cerealData)
-        console.log('Action: createCereal response received', response)
         // Optionally, you could fetch the updated list of cereals here or just return the new cereal.
         return response.data || null
       } catch (err) {
@@ -137,7 +140,6 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function to update a cereal.
         const response = await UpdateCereal(cerealData)
-        console.log('Action: updateCereal response received', response)
         // Optionally, you could fetch the updated list of cereals here or just return the updated cereal.
         return response.data || null
       } catch (err) {
@@ -156,7 +158,6 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function to delete a cereal.
         const response = await DeleteCereal(id)
-        console.log('Action: deleteCereal response received', response)
         // Optionally, you could fetch the updated list of cereals here or just return the response.
         return response.data || null
       } catch (err) {
@@ -175,7 +176,6 @@ export const useCerealStore = defineStore('cereals', {
       try {
         // Call the API function to create a new user.
         const response = await CreateUser(userData)
-        console.log('Action: createUser response received', response)
         return response.data || null
       } catch (err) {
         // If the creation fails...
@@ -186,61 +186,166 @@ export const useCerealStore = defineStore('cereals', {
         this.loading = false // Stop loading indicator.
       }
     },
-    // Action to log in a user.
-    async login(credentials) {
+
+    // Action to fetch a user by username.
+    async fetchUserByUsername(username) {
       this.loading = true // We're loading again!
       this.error = null // Clear previous errors.
       try {
-        // Call the API function to log in.
-        const response = await Login(credentials)
-        console.log('Action: login response received', response)
-
-        // Assuming your API returns the token in response.data.token
-        // Adjust 'response.data.token' if the structure is different
-        const token = response.data && response.data.token
-
-        if (token) {
-          this.authToken = token // 1. Store token in Pinia state
-          localStorage.setItem('authToken', token) // 2. Store token in localStorage
-          setAuthToken(token) // 3. Set token for API service headers
-
-          // Optionally, store user information if it's part of the response
-          // if (response.data.user) {
-          //   this.user = response.data.user;
-          // }
-          console.log('User logged in, token stored.')
-          return response.data // Or true, or user data, depending on what you want to return
-        } else {
-          // Handle cases where login is "successful" according to HTTP status, but no token is returned
-          console.error('Action: Login successful but no token received.', response)
-          throw new Error('Login successful but no token was provided by the server.')
-        }
+        // Call the API function to fetch a user by username.
+        const response = await FetchUserByUsername(username)
+        return response.data || null
       } catch (err) {
-        // If the login fails...
-        console.error(
-          'Action: Failed to log in in store:',
-          err.response ? err.response.data : err.message,
-        )
-        this.error = err.response ? err.response.data.message || err.response.data : err.message // Store a more user-friendly error message
-
-        // Clear any potentially stale token information
-        this.authToken = null
-        localStorage.removeItem('authToken')
-        setAuthToken(null)
-        throw err // Re-throw the error for the component to handle (e.g., display error message)
+        // If the fetch fails...
+        console.error('Action: Failed to fetch user by username in store:', err)
+        this.error = err // Store the error.
       } finally {
         // Always runs.
         this.loading = false // Stop loading indicator.
       }
     },
+
+    // Action to update an existing user entry.
+    async updateUser(userData) {
+      this.loading = true // We're loading again!
+      this.error = null // Clear previous errors.
+      try {
+        // Call the API function to update a user.
+        const response = await UpdateUser(userData)
+        this.user = response.data // Update the user in the store
+        localStorage.setItem('user', JSON.stringify(this.user)) // Update user in localStorage
+        return response.data || null
+      } catch (err) {
+        // If the update fails...
+        console.error('Action: Failed to update user in store:', err)
+        this.error = err // Store the error.
+      } finally {
+        // Always runs.
+        this.loading = false // Stop loading indicator.
+      }
+    },
+    // Action to delete a user entry.
+    async deleteUser(id) {
+      this.loading = true // We're loading again!
+      this.error = null // Clear previous errors.
+      try {
+        // Call the API function to delete a user.
+        const response = await DeleteUser(id)
+        return response.data || null
+      } catch (err) {
+        // If the deletion fails...
+        console.error('Action: Failed to delete user in store:', err)
+        this.error = err // Store the error.
+      } finally {
+        // Always runs.
+        this.loading = false // Stop loading indicator.
+      }
+    },
+
+    // Action to log in a user.
+    async login(credentials) {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await Login(credentials)
+
+        const token = response.data && response.data.token
+
+        if (token) {
+          this.authToken = token
+          localStorage.setItem('authToken', token)
+          setAuthToken(token) // Set token for API calls
+
+          const decodedToken = jwtDecode(token) // Decode token to get user info
+          const userData = await FetchUserProfile(decodedToken.id) // Fetch user profile
+          this.user = userData.data
+          localStorage.setItem('user', JSON.stringify(this.user)) // Store user in localStorage
+          // No need to call checkTokenExpiration() immediately after login with a new token.
+          return response.data
+        } else {
+          console.error('Action: Login successful but no token received.', response)
+          throw new Error('Login successful but no token was provided by the server.')
+        }
+      } catch (err) {
+        console.error(
+          'Action: Failed to log in in store:',
+          err.response ? err.response.data : err.message,
+        )
+        this.error = err.response ? err.response.data.message || err.response.data : err.message
+
+        this.authToken = null
+        this.user = null // Clear user state
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('user') // Clear user from localStorage
+        setAuthToken(null)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
     logout() {
       this.authToken = null
-      this.user = null // Clear user data as well
+      this.user = null
       localStorage.removeItem('authToken')
-      setAuthToken(null) // Clear token from API service headers
+      setAuthToken(null)
       console.log('User logged out, token cleared.')
       // Here you might want to redirect to the login page or update UI
       // Example: router.push('/login');
+    },
+    checkTokenExpiration() {
+      const token = this.authToken
+      if (token) {
+        try {
+          const decodedToken = jwtDecode(token)
+          const currentTime = Date.now() / 1000 // Convert to seconds
+          if (decodedToken.exp < currentTime) {
+            console.log('Token expired, logging out.')
+            this.logout()
+            // Optionally, redirect to login or show a message
+            // For example, if you have access to the router:
+            // import router from '@/router'; // Adjust path as needed
+            // router.push('/login');
+          }
+        } catch (error) {
+          console.error('Error decoding token:', error)
+          this.logout() // If token is malformed, logout
+        }
+      }
+    },
+    async initializeAuth() {
+      const tokenFromStorage = localStorage.getItem('authToken')
+
+      if (tokenFromStorage) {
+        this.authToken = tokenFromStorage // Set token in state
+        setAuthToken(tokenFromStorage) // Set token for API calls
+
+        this.checkTokenExpiration() // Check if the token is expired. If so, logout() is called.
+
+        // If token is still valid after checkTokenExpiration (i.e., logout was not called)
+        if (this.authToken) {
+          try {
+            // User might have been loaded from localStorage by state initializer.
+            // We will now attempt to refresh it from the server.
+            const decoded = jwtDecode(this.authToken)
+            const userProfileResponse = await FetchUserProfile(decoded.id)
+
+            if (userProfileResponse && userProfileResponse.data) {
+              this.user = userProfileResponse.data
+              localStorage.setItem('user', JSON.stringify(this.user)) // Update localStorage with fresh data
+            } else {
+              // Failed to fetch fresh user profile, but token is valid.
+              console.warn('Valid token, but failed to fetch user profile. Logging out.')
+              this.logout()
+            }
+          } catch (error) {
+            console.error('Error during auth initialization (fetching user profile):', error)
+            this.logout()
+          }
+        }
+      } else {
+        // No token in localStorage, ensure clean logout state.
+        this.logout()
+      }
     },
   },
 })

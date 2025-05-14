@@ -8,6 +8,9 @@
           <router-link to="/login">Login</router-link>
         </li>
         <li v-else class="login-link">
+          <router-link to="/profile" class="profile-icon-link">
+            <v-icon icon="mdi-account" class="profile-icon"
+          /></router-link>
           <a href="#" @click.prevent="handleLogout">Logout</a>
         </li>
       </ul>
@@ -65,6 +68,18 @@ nav ul {
 
 .login-link {
   margin-left: auto;
+  display: flex; /* Add flex to align items in the li */
+  align-items: center; /* Vertically align items */
+}
+
+.profile-icon-link {
+  margin-right: 1rem;
+}
+
+nav a.router-link-exact-active {
+  color: #0056b3; /* Darker blue for active link */
+  font-weight: 600; /* Slightly bolder */
+  border-bottom-color: #0056b3; /* Persistent underline for active */
 }
 nav a {
   text-decoration: none;

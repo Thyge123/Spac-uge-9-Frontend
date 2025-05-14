@@ -17,7 +17,6 @@ const apiService = axios.create({
 export const setAuthToken = (token) => {
   if (token) {
     apiService.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    console.log('API Service: Auth token has been set.')
   } else {
     delete apiService.defaults.headers.common['Authorization']
     console.log('API Service: Auth token has been removed.')
@@ -121,6 +120,48 @@ export const DeleteCereal = async (id) => {
   }
 }
 
+//Fetch user profile data
+export const FetchUserProfile = async (userId) => {
+  // Basic validation: Ensure a user ID was actually provided.
+  if (!userId) {
+    console.error('API Service: FetchUserProfile called without a user ID.')
+    throw new Error('User ID is required to fetch profile.') // Throw a specific error.
+  }
+  try {
+    // Make a GET request using a template literal to include the user ID in the URL path.
+    const response = await apiService.get(`users/${userId}`)
+    console.log(`API Service: Successfully fetched user profile ID: ${userId}.`)
+    // Return the full response object.
+    return response
+  } catch (error) {
+    // Handle potential errors.
+    console.error(`API Service: Error fetching user profile by ID ${userId}:`, error)
+    // Re-throw the error for upstream handling.
+    throw error
+  }
+}
+
+// Fetch user data by username.
+export const FetchUserByUsername = async (username) => {
+  // Basic validation: Ensure a username was actually provided.
+  if (!username) {
+    console.error('API Service: FetchUserByUsername called without a username.')
+    throw new Error('Username is required to fetch user data.') // Throw a specific error.
+  }
+  try {
+    // Make a GET request using a template literal to include the username in the URL path.
+    const response = await apiService.get(`users/username/${username}`)
+    console.log(`API Service: Successfully fetched user by username: ${username}.`)
+    // Return the full response object.
+    return response
+  } catch (error) {
+    // Handle potential errors.
+    console.error(`API Service: Error fetching user by username ${username}:`, error)
+    // Re-throw the error for upstream handling.
+    throw error
+  }
+}
+
 // Create a new user entry in the database.
 export const CreateUser = async (userData) => {
   try {
@@ -132,6 +173,43 @@ export const CreateUser = async (userData) => {
   } catch (error) {
     // Handle potential errors.
     console.error('API Service: Error creating new user:', error)
+    // Re-throw the error for upstream handling.
+    throw error
+  }
+}
+
+// Update an existing user entry in the database.
+export const UpdateUser = async (userData) => {
+  try {
+    // Make a PUT request to the '/users' endpoint with the user data.
+    const response = await apiService.put('users', userData)
+    console.log('API Service: Successfully updated user.')
+    // Return the full response object.
+    return response
+  } catch (error) {
+    // Handle potential errors.
+    console.error('API Service: Error updating user:', error)
+    // Re-throw the error for upstream handling.
+    throw error
+  }
+}
+
+// Delete a user entry from the database.
+export const DeleteUser = async (id) => {
+  // Basic validation: Ensure an ID was actually provided. No ID, no user!
+  if (!id) {
+    console.error('API Service: DeleteUser called without an ID.')
+    throw new Error('User ID is required to delete.') // Throw a specific error.
+  }
+  try {
+    // Make a DELETE request using a template literal to include the ID in the URL path.
+    const response = await apiService.delete(`users/${id}`)
+    console.log(`API Service: Successfully deleted user ID: ${id}.`)
+    // Return the full response object.
+    return response
+  } catch (error) {
+    // Handle potential errors.
+    console.error(`API Service: Error deleting user by ID ${id}:`, error)
     // Re-throw the error for upstream handling.
     throw error
   }

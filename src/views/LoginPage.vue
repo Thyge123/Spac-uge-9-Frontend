@@ -3,11 +3,17 @@
     <form @submit.prevent="handleLogin">
       <div>
         <label for="username">Username:</label>
-        <input type="text" id="username" v-model="username" required />
+        <input type="text" id="username" v-model="username" required autocomplete="username" />
       </div>
       <div>
         <label for="password">Password:</label>
-        <input type="password" id="password" v-model="password" required />
+        <input
+          type="password"
+          id="password"
+          v-model="password"
+          required
+          autocomplete="current-password"
+        />
       </div>
       <button type="submit">Login</button>
       <div v-if="error" class="error">{{ error }}</div>
@@ -16,7 +22,7 @@
     </form>
     <div class="links">
       <router-link to="/register">Register</router-link>
-      <router-link to="/forgot-password">Forgot Password?</router-link>
+      <router-link to="/reset-password">Forgot Password?</router-link>
     </div>
   </div>
 </template>
@@ -51,7 +57,7 @@ export default {
         this.success = true
         this.successMessage = 'Login successful!'
         // Redirect to the home page or dashboard after successful login
-        this.$router.push('/home')
+        this.$router.push('/')
       } catch (err) {
         this.error = err.response?.data?.message || 'Invalid username or password'
       } finally {

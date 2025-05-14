@@ -4,6 +4,8 @@ import AllCereals from '@/views/AllCereals.vue'
 import CerealDetail from '@/views/CerealDetail.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import RegisterUser from '@/views/RegisterUser.vue'
+import ProfileView from '@/views/ProfileView.vue'
+import ResetPassword from '@/views/ResetPassword.vue'
 import { useCerealStore } from '@/stores/cerealStore'
 
 const routes = [
@@ -51,6 +53,38 @@ const routes = [
     component: RegisterUser,
     meta: {
       title: 'Register',
+    },
+  },
+  {
+    path: '/profile',
+    name: 'ProfileView',
+    component: ProfileView,
+    meta: {
+      title: 'Profile',
+    },
+    beforeEnter: (to, from, next) => {
+      const store = useCerealStore()
+      if (!store.isAuthenticated) {
+        next({ name: 'home' }) // Redirect to login if not authenticated
+      } else {
+        next() // Proceed to profile page
+      }
+    },
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
+    meta: {
+      title: 'Reset Password',
+    },
+    beforeEnter: (to, from, next) => {
+      const store = useCerealStore()
+      if (store.isAuthenticated) {
+        next({ name: 'home' }) // Redirect to home if already logged in
+      } else {
+        next() // Proceed to reset password page
+      }
     },
   },
 ]
