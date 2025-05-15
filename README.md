@@ -2,6 +2,8 @@
 
 This is a frontend application for browsing and managing a catalog of cereals. It interacts with a backend API to fetch and display cereal data, and allows users to perform CRUD operations on cereals, as well as register and log in.
 
+[Demo](https://spac-uge-9-frontend.vercel.app/)
+
 ## Tech Stack
 
 *   **Vue.js 3:** A progressive JavaScript framework for building user interfaces.
@@ -12,6 +14,8 @@ This is a frontend application for browsing and managing a catalog of cereals. I
 *   **Axios:** Promise-based HTTP client for making API requests.
 *   **ESLint & Prettier:** For code linting and formatting.
 *   **Oxlint:** An alternative linter.
+*   **MonsterASP.NET:** For hosting REST API and SQL Datbase.
+*   **Vercel:** For hosting Frontend.
 
 ## Features
 
