@@ -38,7 +38,7 @@ export const useCerealStore = defineStore('cereals', {
     cereals: [], // An array to hold all our cereal objects.
     loading: false, // Are we currently fetching data?
     error: null, // Did something go wrong during fetch? Starts null, hoping for the best.
-    baseURL: 'https://localhost:7226', // The root URL for fetching cereal images.
+    baseURL: 'http://cerealsapi.runasp.net', // The root URL for fetching cereal images.
     cereal: null, // Holds a single cereal object, for the detail view. Starts lonely.
     authToken: localStorage.getItem('authToken') || null, // Initialize token from localStorage
     user: JSON.parse(localStorage.getItem('user')) || null,

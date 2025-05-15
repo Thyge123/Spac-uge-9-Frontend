@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 // The home base for our API calls. All cereal-related endpoints live under this URL.
-const BASE_URL = 'https://localhost:7226/api/'
-const LOGIN_URL = 'https://localhost:7226/api/login' // URL for the login endpoint.
+const BASE_URL = 'http://cerealsapi.runasp.net/api/'
+const LOGIN_URL = 'http://cerealsapi.runasp.net/api/login' // URL for the login endpoint.
 
 // Create an Axios instance with default settings.
 const apiService = axios.create({
